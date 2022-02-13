@@ -83,3 +83,58 @@ if __name__=='__main__':
     updater.start_polling(1.0)
     updater.idle() 
     
+"""
+PrivateBin
+    
+ This document will expire in 5 days.
+from dataclasses import dataclass
+from telegram.ext import *
+import telegram
+from queue import Queue
+
+msg_queue = Queue()
+
+API_KEY = "5174250209:AAG7fyel3thQD1FMIexJhjBKOPfBS8uea58"
+
+QUESTION_NO = 0
+
+
+@dataclass
+class Question:
+    question: str
+    answer: int
+    explanation: str
+
+
+def main():
+    bot = updater.bot
+    questions = [
+        Question("Who is ankit? 1: great man 2: hitler", 1, "Not a hitler"),
+        Question("Who is gourav? 1: great man 2: hitler", 2, "Yes a hitler"),
+    ]
+    for i in range(100):
+        questions.append(Question(f"Who is {i}? 1: great man 2: hitler", 2, "Yes a hitler"))
+
+
+    user_msg, chat_id = msg_queue.get()
+
+    for question in questions:
+        bot.send_message(chat_id, question.question)
+        user_msg, chat_id = msg_queue.get()
+        if user_msg == str(question.answer):
+            bot.send_message(chat_id, "Very good")
+        else:
+            bot.send_message(chat_id, "Wrong Answer. correct answer is " + str(question.answer))
+            bot.send_message(chat_id, "Explanation: " + question.explanation)
+
+
+def my_handle_gk(update, context):
+    msg_queue.put((update.message.text, update.message.chat_id))
+
+
+if __name__ == "__main__":
+    updater = Updater(API_KEY, use_context=True)
+    dp: Dispatcher = updater.dispatcher
+    dp.add_handler(MessageHandler(Filters.text, my_handle_gk))
+    updater.start_polling(1.0)
+    main()"""
