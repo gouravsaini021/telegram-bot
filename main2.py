@@ -12,15 +12,24 @@ msg_queue = Queue()
 API_KEY = "5174250209:AAG7fyel3thQD1FMIexJhjBKOPfBS8uea58"
 
 
-
+questions=None
 
 @dataclass
 class Question:
 	question: str
 	answer: int
 	explanation: str
+def mathquestion(update,_):
+	global questions
+	questions=[
+		Question("2+2=? \n 1). 4 \t 2). 5 \n 3). 8 \t 4). 0 ",1,"2+2 is 4"),
+		Question("What is the value of pi? \n 1). 3.14  \t2). 3.33 \n 3). 99 \t 4). 7/22",1,"The value of pi is 3.14"),
+		Question("What is the area of square \n 1). side+side \t2). side-side \n 3). side*side \t 4). side/side",3,"The area of square is side*side"),
+		Question("What is the area of rectangle \n 1). length+breadth  \t 2). length*breadth \n 3). length-breadth \t 4). length//breadth",2,"The area of rectangle is length*breadth")
+
+	]
 def gkquestion(update,_):
-	print("hello")
+	# print("hello")
 	global questions
 	questions=[
 		Question("Who invented Computer? \n 1.charles babbage \t 2. Albert Einstein \n 3.Newton \t 4.Rahul Gandhi ",1,"Charles Babbage is Father of Computer"),
@@ -71,47 +80,50 @@ users: Dict[str, User] = defaultdict(User)
 
 
 def my_handle_gk(update, _):
-	chat_id=update.message.chat_id
-	chat_id=str(chat_id)
-	chat_message=update.message.text
-	mydata_dict=fetch_data()
-	
-	if chat_id not in mydata_dict or mydata_dict[chat_id]['question_no']>len(questions):
-		mydata_dict[chat_id]={'question_no':0,'correct_ans':0}
-		
-	question_nu=mydata_dict[chat_id]['question_no']
-	correct_ans=mydata_dict[chat_id]['correct_ans']
-
-	if question_nu<=len(questions):
-		if question_nu<len(questions):
-			question=questions[question_nu].question
-		answer=questions[question_nu-1].answer
-		explanation=questions[question_nu-1].explanation
-	user = users[chat_id]
-	# print(user,type(user))
-	# print(mydata_dict[chat_id])
-	if question_nu==0:
-		update.message.reply_text(question)
-		update_data(mydata_dict,chat_id,question=question_nu+1)
-		# print(mydata_dict)
-	elif question_nu<len(questions)+1 and question_nu!=0:
-		if chat_message==str(answer):
-			update_data(mydata_dict,chat_id,correct_ans=correct_ans+1)
-			update.message.reply_text("Right Answer")
-		else:
-			update.message.reply_text("Wrong Answer")
-			# update_data(mydata_dict,chat_id,correct_ans=correct_ans)
-		update.message.reply_text(explanation)
-		if question_nu<len(questions):
-			update.message.reply_text(question)
-		else:
-			correct_ans=mydata_dict[chat_id]['correct_ans']
-			update.message.reply_text("your score is "+str(correct_ans)+" /"+str(len(questions)))
-		update_data(mydata_dict,chat_id,question=question_nu+1)
+	if questions==None:
+		update.message.reply_text("type /gk or /math for gk and math questions recpectively")
 	else:
-		update_data(mydata_dict,chat_id,question=question_nu+1)
-	print(mydata_dict)
-	insert_data(mydata_dict)
+		chat_id=update.message.chat_id
+		chat_id=str(chat_id)
+		chat_message=update.message.text
+		mydata_dict=fetch_data()
+		
+		if chat_id not in mydata_dict or mydata_dict[chat_id]['question_no']>len(questions):
+			mydata_dict[chat_id]={'question_no':0,'correct_ans':0}
+			
+		question_nu=mydata_dict[chat_id]['question_no']
+		correct_ans=mydata_dict[chat_id]['correct_ans']
+
+		if question_nu<=len(questions):
+			if question_nu<len(questions):
+				question=questions[question_nu].question
+			answer=questions[question_nu-1].answer
+			explanation=questions[question_nu-1].explanation
+		user = users[chat_id]
+		# print(user,type(user))
+		# print(mydata_dict[chat_id])
+		if question_nu==0:
+			update.message.reply_text(question)
+			update_data(mydata_dict,chat_id,question=question_nu+1)
+			# print(mydata_dict)
+		elif question_nu<len(questions)+1 and question_nu!=0:
+			if chat_message==str(answer):
+				update_data(mydata_dict,chat_id,correct_ans=correct_ans+1)
+				update.message.reply_text("Right Answer")
+			else:
+				update.message.reply_text("Wrong Answer")
+				# update_data(mydata_dict,chat_id,correct_ans=correct_ans)
+			update.message.reply_text(explanation)
+			if question_nu<len(questions):
+				update.message.reply_text(question)
+			else:
+				correct_ans=mydata_dict[chat_id]['correct_ans']
+				update.message.reply_text("your score is "+str(correct_ans)+" /"+str(len(questions)))
+			update_data(mydata_dict,chat_id,question=question_nu+1)
+		else:
+			update_data(mydata_dict,chat_id,question=question_nu+1)
+		print(mydata_dict)
+		insert_data(mydata_dict)
 
 	# if user.has_prev_question() and user.next_question!=len(questions)-1:
 	# 	prev_question = user.get_prev_question()
@@ -139,7 +151,9 @@ if __name__ == "__main__":
 	updater = Updater(API_KEY, use_context=True)
 	dp: Dispatcher = updater.dispatcher
 	dp.add_handler(CommandHandler('gk',gkquestion))
+	dp.add_handler(CommandHandler('math',mathquestion))
 	dp.add_handler(MessageHandler(Filters.text, my_handle_gk))
 	
 	updater.start_polling(1.0)
+	updater.idle()
 	# main()
