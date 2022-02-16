@@ -1,3 +1,4 @@
+import os
 from dataclasses import dataclass, asdict
 from logging import currentframe
 from typing import Dict
@@ -9,7 +10,7 @@ import json
 
 msg_queue = Queue()
 
-API_KEY = "5174250209:AAG7fyel3thQD1FMIexJhjBKOPfBS8uea58"
+API_KEY =os.environ.get('telegram_token')
 
 
 questions=None
