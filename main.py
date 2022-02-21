@@ -1,140 +1,79 @@
-import logging
-from telegram.ext import *
-#import responses
-API_KEY="5174250209:AAG7fyel3thQD1FMIexJhjBKOPfBS8uea58"
-
-logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s',level=logging.INFO)
-logging.info('Starting bot...')
-
-def start_command(update,context):
-    print(update)
-    update.message.reply_text('Hello thelkjlkjre!  I\'m a bot. What \'s up?')
-    update.message.reply_text('who is pm of india /n 1.narendra modi/t 2.manhoman singh')
-    text=str(update.message.text).lower()
-    print(text)
-
-    
-
-    if text=="1":
-        update.message.reply_text('Right answer')
-    else:
-        update.message.reply_text('wrong answer narendra modi is prime minister of india')
-        
-
-def help_command(update,context):
-    update.message.reply_text('try typing anything and i will do my best to respond!')
-
-def custom_command(update,context):
-    update.message.reply_text('This a custom command')
-USER_TAKING_GK_QUIZ = False
-
-def handle_message(update,context):
-    print(" USER taking", USER_TAKING_GK_QUIZ)
-
-    if USER_TAKING_GK_QUIZ:
-        print("stopped gk")
-        #handle_gk(update, context)
-        return
-    print("update=",update,"context=",context)
-    # print(type(update))
-    text=str(update.message.text).lower()
-    print(text)
-    if text=="who is ankit":
-        update.message.reply_text("Hitler")
-
-    #Bot response
-    else:
-        update.message.reply_text(stext)
-    logging.info(f'User({update.message.chat.id}) says: {text}')
-
-def error(update,context):
-    logging.error(f'Update{update} caused error {context.error}'  )
-
-def handle_gk(update, context):
-    print("In Handle Gk", update)
-def mygk(update,context):
-    global USER_TAKING_GK_QUIZ
-    print("i am in gk function ")
-    USER_TAKING_GK_QUIZ = True
-    print("SET USER taking")
-    dp.add_handler(MessageHandler(Filters.text, handle_gk))
-    print(dp.handlers)
-
-
-    
-
-    
-
-
-if __name__=='__main__':
-    updater=Updater(API_KEY,use_context=True)
-    dp=updater.dispatcher
-    
-    
-
-    #commands
-    dp.add_handler(CommandHandler('start',start_command))
-    dp.add_handler(CommandHandler('help',help_command))
-    dp.add_handler(CommandHandler('gk',mygk))
-    #message
-    dp.add_handler(MessageHandler(Filters.text,handle_message ))
-
-    #Run the bot
-    updater.start_polling(1.0)
-    updater.idle() 
-    
-"""
-PrivateBin
-    
- This document will expire in 5 days.
-from dataclasses import dataclass
+import os
+import database
+from typing import *
 from telegram.ext import *
 import telegram
-from queue import Queue
+import json
 
-msg_queue = Queue()
-
-API_KEY = "5174250209:AAG7fyel3thQD1FMIexJhjBKOPfBS8uea58"
-
-QUESTION_NO = 0
+from question_set import question_set
 
 
-@dataclass
-class Question:
-    question: str
-    answer: int
-    explanation: str
+API_KEY = os.environ.get('telegram_token')
+print(API_KEY)
 
+def start(update,_):
+    update.message.reply_text("type /gk or /math for gk or math paper recpectively")
+def gk(update,_):
+    chat_id=update.message.chat_id
+    update.message.reply_text("""Instruction Guideliness:
+        1 -> If you type /(paper_name) then your score is set to 0 and 
+        and your paper is restarted so Carefully Type 
 
-def main():
-    bot = updater.bot
-    questions = [
-        Question("Who is ankit? 1: great man 2: hitler", 1, "Not a hitler"),
-        Question("Who is gourav? 1: great man 2: hitler", 2, "Yes a hitler"),
-    ]
-    for i in range(100):
-        questions.append(Question(f"Who is {i}? 1: great man 2: hitler", 2, "Yes a hitler"))
+        2 -> If you send apart from option  1,2,3,4  then 
+        it will count as Wrong Answer""")
+    update.message.reply_text("First type any thing to start paper")
+    database.set_current_paper(chat_id,"gk")
+def math(update,_):
+    chat_id=update.message.chat_id
+    update.message.reply_text("""Instruction Guideliness:
+        1 -> If you type /(paper_name) then your score is set to 0 and 
+        and your paper is restarted so Carefully Type 
 
+        2 -> If you send apart from option  1,2,3,4  then 
+        it will count as Wrong Answer""")
+    update.message.reply_text("First type any thing to start paper")
+    database.set_current_paper(chat_id,"math")
 
-    user_msg, chat_id = msg_queue.get()
+def my_handle_response(update,_):
+    chat_id=update.message.chat_id
+    chat_message=update.message.text
+    question_no,paper_name=database.get_question_no_and_paper_name(chat_id)
 
-    for question in questions:
-        bot.send_message(chat_id, question.question)
-        user_msg, chat_id = msg_queue.get()
-        if user_msg == str(question.answer):
-            bot.send_message(chat_id, "Very good")
+    maximum_question_no=database.maximum_question_no(paper_name)
+    if question_no==0:
+        question=database.get_question(question_no,paper_name)
+        update.message.reply_text(question)
+        database.update_question_no(question_no+1,chat_id,paper_name)
+    elif question_no<maximum_question_no+1 and question_no!=0:
+        answer,explanation=database.get_previous_answer_and_explantion(question_no,paper_name)
+        if chat_message==str(answer):
+            update.message.reply_text("Right Answer")
+            database.update_correct_ans(chat_id,paper_name)
         else:
-            bot.send_message(chat_id, "Wrong Answer. correct answer is " + str(question.answer))
-            bot.send_message(chat_id, "Explanation: " + question.explanation)
+            update.message.reply_text("Wrong Answer")
+        update.message.reply_text(explanation)
+    if question_no<maximum_question_no and question_no!=0:
+        question=database.get_question(question_no,paper_name)
+        database.update_question_no(question_no+1,chat_id,paper_name)
+        update.message.reply_text(question)
+    elif question_no==maximum_question_no:
+        score=database.get_score(chat_id,paper_name)
+        database.update_question_no(question_no+1,chat_id,paper_name)
+        update.message.reply_text("your result is "+str(score)+" out of "+str(maximum_question_no))
 
 
-def my_handle_gk(update, context):
-    msg_queue.put((update.message.text, update.message.chat_id))
-
-
+    
 if __name__ == "__main__":
+
+    database.create_tables()
+
+
     updater = Updater(API_KEY, use_context=True)
     dp: Dispatcher = updater.dispatcher
-    dp.add_handler(MessageHandler(Filters.text, my_handle_gk))
+    dp.add_handler(CommandHandler('start',start))
+    dp.add_handler(CommandHandler('gk',gk))
+    dp.add_handler(CommandHandler('math',math))
+    dp.add_handler(MessageHandler(Filters.text, my_handle_response))
+    
     updater.start_polling(1.0)
-    main()"""
+    updater.idle()
